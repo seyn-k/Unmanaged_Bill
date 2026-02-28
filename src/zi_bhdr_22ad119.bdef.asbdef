@@ -1,0 +1,69 @@
+unmanaged implementation in class zbp_bhdr_22ad119 unique;
+strict ( 2 );
+with draft;
+
+define behavior for ZI_BHDR_22AD119 alias Header
+draft table zdhdr_22ad119
+// REMOVED: late numbering
+lock master
+total etag LocalLastChangedAt
+authorization master ( instance )
+etag master LocalLastChangedAt
+{
+  create; update; delete;
+  association _BillItems { create; with draft; }
+
+  // ADDED: numbering : managed tells RAP to auto-generate the UUIDs!
+  field ( readonly, numbering : managed ) BillUuid;
+  field ( readonly ) TotalAmount, LocalLastChangedAt;
+
+  draft action Edit;
+  draft action Activate optimized;
+  draft action Discard;
+  draft action Resume;
+  draft determine action Prepare;
+
+  action MarkAsPaid result [1] $self;
+
+  mapping for zbhdr_22ad119 {
+    BillUuid = bill_uuid;
+    BillNumber = bill_number;
+    CustomerName = customer_name;
+    BillingDate = billing_date;
+    TotalAmount = total_amount;
+    Currency = currency;
+    PaymentStatus = payment_status;
+    LocalLastChangedAt = local_last_changed_at;
+  }
+}
+
+define behavior for ZI_BITM_22AD119 alias Item
+draft table zditm_22ad119
+// REMOVED: late numbering
+lock dependent by _BillHeader
+authorization dependent by _BillHeader
+etag master LocalLastChangedAt
+{
+  update; delete;
+  association _BillHeader { with draft; }
+
+  // ADDED: numbering : managed
+  field ( readonly, numbering : managed ) ItemUuid;
+  field ( readonly ) BillUuid, Subtotal, LocalLastChangedAt;
+
+  determination calculateSubtotal on modify { field Quantity, UnitPrice; }
+  validation validateQuantity on save { field Quantity; }
+
+  mapping for zbitm_22ad119 {
+    ItemUuid = item_uuid;
+    BillUuid = bill_uuid;
+    ItemPosition = item_position;
+    ProductId = product_id;
+    Quantity = quantity;
+    QuantityUnit = quantityunit;
+    UnitPrice = unit_price;
+    Subtotal = subtotal;
+    Currency = currency;
+    LocalLastChangedAt = local_last_changed_at;
+  }
+}
